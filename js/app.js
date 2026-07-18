@@ -11,12 +11,17 @@
   var $btnClear = document.getElementById('btn-clear');
   var $chkPretty = document.getElementById('chk-pretty');
 
+  var $statusText = document.getElementById('status-text');
+  var $statusIcon = document.getElementById('status-icon');
+  var $copyLabel = document.getElementById('copy-label');
+
   var lastResult = null;
 
   function setStatus(kind, message) {
     $status.hidden = false;
     $status.className = 'status ' + kind;
-    $status.textContent = message;
+    $statusText.textContent = message;
+    $statusIcon.querySelector('use').setAttribute('href', kind === 'ok' ? '#i-check-circle' : '#i-alert');
   }
 
   function renderFixes(fixes) {
@@ -86,16 +91,25 @@
     var text = $output.value;
     if (!text) return;
     var done = function () {
-      var old = $btnCopy.textContent;
-      $btnCopy.textContent = '복사됐어요! 코코포리아에 Ctrl+V';
-      setTimeout(function () { $btnCopy.textContent = old; }, 2000);
+      $copyLabel.textContent = '복사됐어요! 코코포리아에 Ctrl+V';
+      $btnCopy.querySelector('use').setAttribute('href', '#i-check');
+      setTimeout(function () {
+        $copyLabel.textContent = '복사하기';
+        $btnCopy.querySelector('use').setAttribute('href', '#i-copy');
+      }, 2000);
+    };
+    var fallback = function () {
+      $output.focus();
+      $output.select();
+      var copied = false;
+      try { copied = document.execCommand('copy'); } catch (e) { copied = false; }
+      if (copied) done();
+      else setStatus('err', '자동 복사가 막혀 있어요. 결과 창의 내용을 직접 전체 선택(Ctrl+A)해서 복사해 주세요.');
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done);
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
     } else {
-      $output.select();
-      document.execCommand('copy');
-      done();
+      fallback();
     }
   });
 
